@@ -104,7 +104,10 @@ function TeamChat({ projectId, token, currentUser }) {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setMessages(prev => [...prev, res.data]);
+      setMessages(prev => {
+        if (prev.some(m => m._id === res.data._id)) return prev;
+        return [...prev, res.data];
+      });
       setNewMessage('');
       setTimeout(scrollToBottom, 50);
       
