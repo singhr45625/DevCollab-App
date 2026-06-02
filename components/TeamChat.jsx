@@ -14,8 +14,22 @@ function TeamChat({ projectId, token, currentUser }) {
   const typingTimeoutRef = useRef();
 
   useEffect(() => {
+    const updatePresence = async (status) => {
+      try {
+        await axios.post('/api/presence/update', {
+          status,
+          currentProject: projectId
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
     fetchMessages();
     fetchOnlineUsers();
+    updatePresence('online');
     
     // Connect to WebSocket
     const socketUrl = import.meta.env.VITE_API_URL || undefined;
@@ -46,16 +60,22 @@ function TeamChat({ projectId, token, currentUser }) {
     
     // Listen for presence updates
     socketRef.current.on('presence-update', ({ user, status }) => {
-      setOnlineUsers(prev => {
-        const exists = prev.find(u => u.user._id === user);
-        if (exists) {
-          return prev.map(u => u.user._id === user ? { ...u, status } : u);
-        }
-        return prev;
-      });
+      if (status === 'offline') {
+        setOnlineUsers(prev => prev.filter(u => u.user._id !== user));
+      } else {
+        setOnlineUsers(prev => {
+          const exists = prev.find(u => u.user._id === user);
+          if (exists) {
+            return prev.map(u => u.user._id === user ? { ...u, status } : u);
+          }
+          fetchOnlineUsers();
+          return prev;
+        });
+      }
     });
     
     return () => {
+      updatePresence('offline');
       socketRef.current.disconnect();
     };
   }, [projectId]);
