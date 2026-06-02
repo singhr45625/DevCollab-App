@@ -309,7 +309,7 @@ function ProjectBoard({ token }) {
   
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-6 border-b dark:border-gray-700">
-          <div className="flex gap-4">
+          <div className="flex gap-2 sm:gap-4 overflow-x-auto whitespace-nowrap scrollbar-thin pb-1">
             <button
               onClick={() => setActiveTab('kanban')}
               className={`px-4 py-2 font-medium transition-colors ${
@@ -427,8 +427,7 @@ function ProjectBoard({ token }) {
           ))}
         </div>
       )}
-      </div>
-  
+
       {activeTab === 'chat' && (
         <div className="h-[600px]">
           <TeamChat projectId={id} token={token} currentUser={currentUserId} />
@@ -442,7 +441,8 @@ function ProjectBoard({ token }) {
       {activeTab === 'members' && (
         <ProjectMembers projectId={id} token={token} userRole={project?.userRole} />
       )}
-
+      </div>
+  
       {/* Create Task Modal */}
       {showTaskModal && (
         <div className="fixed inset-0 bg-slate-950/70 flex items-center justify-center z-50 px-4">

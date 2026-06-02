@@ -9,6 +9,7 @@ function TeamChat({ projectId, token, currentUser }) {
   const [newMessage, setNewMessage] = useState('');
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsers, setTypingUsers] = useState(new Set());
+  const [showOnlineList, setShowOnlineList] = useState(false);
   const messagesEndRef = useRef(null);
   const socketRef = useRef();
   const typingTimeoutRef = useRef();
@@ -165,9 +166,9 @@ function TeamChat({ projectId, token, currentUser }) {
   };
   
   return (
-    <div className="flex h-full bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-      {/* Online Users Sidebar */}
-      <div className="w-64 border-r dark:border-gray-700 p-4">
+    <div className="flex h-full bg-white dark:bg-gray-800 rounded-lg shadow-lg relative overflow-hidden">
+      {/* Online Users Sidebar (Desktop only) */}
+      <div className="hidden md:block w-64 border-r dark:border-gray-700 p-4 overflow-y-auto">
         <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-4">
           Online ({onlineUsers.length})
         </h3>
@@ -186,9 +187,59 @@ function TeamChat({ projectId, token, currentUser }) {
           ))}
         </div>
       </div>
+
+      {/* Mobile Online Users Drawer Overlay */}
+      {showOnlineList && (
+        <div 
+          className="fixed inset-0 z-50 md:hidden bg-black/50 backdrop-blur-sm transition-opacity" 
+          onClick={() => setShowOnlineList(false)}
+        >
+          <div 
+            className="absolute right-0 top-0 bottom-0 w-64 bg-white dark:bg-gray-800 p-4 shadow-xl flex flex-col animate-slide-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4 pb-2 border-b dark:border-gray-700">
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300">
+                Online ({onlineUsers.length})
+              </h3>
+              <button 
+                onClick={() => setShowOnlineList(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white text-sm font-semibold px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Close
+              </button>
+            </div>
+            <div className="space-y-3 overflow-y-auto flex-1">
+              {onlineUsers.map(({ user, status }) => (
+                <div key={user._id} className="flex items-center gap-3">
+                  <div className="relative">
+                    <UserCircleIcon className="h-8 w-8 text-gray-400" />
+                    <span className={`absolute bottom-0 right-0 h-3 w-3 ${getStatusColor(status)} rounded-full border-2 border-white`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-800 dark:text-white">{user.name}</p>
+                    <p className="text-xs text-gray-500">{status}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Chat Area Header (Mobile Only Toggle Button) */}
+        <div className="p-3 border-b dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 md:bg-white md:dark:bg-gray-800">
+          <span className="font-semibold text-gray-800 dark:text-white text-sm md:text-base">Team Chat</span>
+          <button
+            onClick={() => setShowOnlineList(true)}
+            className="md:hidden text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-full font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition"
+          >
+            👥 Online ({onlineUsers.length})
+          </button>
+        </div>
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 h-96">
           {messages.map((message) => (
@@ -196,13 +247,13 @@ function TeamChat({ projectId, token, currentUser }) {
               key={message._id}
               className={`flex ${message.sender._id === currentUser ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-[70%] ${message.sender._id === currentUser ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700'} rounded-lg p-3`}>
+              <div className={`max-w-[85%] sm:max-w-[70%] ${message.sender._id === currentUser ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700'} rounded-lg p-3`}>
                 {message.sender._id !== currentUser && (
                   <p className="text-xs font-semibold mb-1 text-gray-600 dark:text-gray-400">
                     {message.sender.name}
                   </p>
                 )}
-                <p className="text-sm">{message.content}</p>
+                <p className="text-sm break-words">{message.content}</p>
                 <p className="text-xs mt-1 opacity-75">
                   {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
                 </p>
@@ -221,11 +272,11 @@ function TeamChat({ projectId, token, currentUser }) {
         </div>
         
         {/* Message Input */}
-        <form onSubmit={sendMessage} className="p-4 border-t dark:border-gray-700">
+        <form onSubmit={sendMessage} className="p-3 sm:p-4 border-t dark:border-gray-700">
           <div className="flex items-center gap-2">
-              <button
+            <button
               type="button"
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full shrink-0"
             >
               <PhotoIcon className="h-5 w-5 text-gray-500" />
             </button>
@@ -237,19 +288,18 @@ function TeamChat({ projectId, token, currentUser }) {
                 setNewMessage(e.target.value);
                 handleTyping();
               }}
-              placeholder="Type a message... (Use @ to mention someone)"
-              className="flex-1 px-4 py-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Type a message..."
+              className="flex-1 min-w-0 px-3 py-2 text-sm border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             
             <button
               type="submit"
               disabled={!newMessage.trim()}
-              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 shrink-0"
             >
               <PaperAirplaneIcon className="h-5 w-5" />
             </button>
           </div>
-          
         </form>
       </div>
     </div>
