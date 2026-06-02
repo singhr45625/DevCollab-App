@@ -34,7 +34,7 @@ const NotificationIcon = ({ type }) => {
   }
 };
 
-function NotificationCenter({ token, onClose }) {
+function NotificationCenter({ token, socket, onClose }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -80,6 +80,26 @@ function NotificationCenter({ token, onClose }) {
     fetchNotifications(true);
     fetchStats();
   }, [filter]);
+
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleNewNotification = (data) => {
+      if (data.notification) {
+        setNotifications(prev => {
+          if (prev.some(n => n._id === data.notification._id)) return prev;
+          return [data.notification, ...prev];
+        });
+        fetchStats();
+      }
+    };
+    
+    socket.on('new-notification', handleNewNotification);
+    
+    return () => {
+      socket.off('new-notification', handleNewNotification);
+    };
+  }, [socket, fetchStats]);
   
   const markAsRead = async (id) => {
     try {

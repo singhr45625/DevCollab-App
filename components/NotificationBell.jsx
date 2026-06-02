@@ -177,7 +177,7 @@ function NotificationBell({ token }) {
       </div>
       
       {showCenter && (
-        <NotificationCenter token={token} onClose={() => setShowCenter(false)} />
+        <NotificationCenter token={token} socket={socketRef.current} onClose={() => setShowCenter(false)} />
       )}
     </>
   );
