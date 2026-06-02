@@ -24,7 +24,10 @@ function TeamChat({ projectId, token, currentUser }) {
     
     // Listen for new messages
     socketRef.current.on('new-message', (message) => {
-      setMessages(prev => [...prev, message]);
+      setMessages(prev => {
+        if (prev.some(m => m._id === message._id)) return prev;
+        return [...prev, message];
+      });
       scrollToBottom();
     });
     
